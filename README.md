@@ -1,6 +1,12 @@
-# Enhanced WhiskeySockets Interactive Buttons
+# BaileysHelper TypeScript
 
-This repository shows how to send every currently known WhatsApp interactive / native flow button type using WhiskeySockets (Baileys fork) without modifying core source. The functionality is packaged and published as the npm package `baileys_helper` which reproduces the binary node structure the official client emits so buttons render correctly for both private & group chats.
+Enhanced WhiskeySockets Interactive Buttons with full TypeScript support
+
+[![npm version](https://img.shields.io/npm/v/baileys-helper.svg)](https://www.npmjs.com/package/baileys-helper)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
+[![License: ISC](https://img.shields.io/badge/License-ISC-yellow.svg)](https://opensource.org/licenses/ISC)
+
+This repository provides enhanced WhatsApp interactive buttons functionality for WhiskeySockets (Baileys fork) with comprehensive TypeScript type definitions. The functionality is packaged and published as the npm package `baileys-helper` which reproduces the binary node structure the official client emits so buttons render correctly for both private & group chats.
 
 ## Problem Statement
 
@@ -8,313 +14,413 @@ By default, WhiskeySockets cannot send interactive buttons while itsukichan can.
 
 ## Solution
 
-The enhanced functionality provided by the `baileys_helper` package provides the missing functionality by:
+The enhanced functionality provided by the `baileys-helper` package provides the missing functionality by:
 
 1. **Detecting button messages** using the same logic as itsukichan
 2. **Converting** WhiskeySockets' `interactiveButtons` format to the proper protobuf structure
 3. **Adding missing binary nodes** (`biz`, `interactive`, `native_flow`, `bot`) via `additionalNodes`
 4. **Automatically handling** private vs group chat requirements
+5. **Full TypeScript support** with comprehensive type definitions
 
 ## Key Features
 
 - ✅ **No modifications** to WhiskeySockets or itsukichan folders
+- ✅ **Full TypeScript Support** with 100% type coverage
 - ✅ **Template functionality removed** as requested
 - ✅ **Automatic binary node injection** for button messages
 - ✅ **Private chat support** (adds `bot` node with `biz_bot: '1'`)
 - ✅ **Group chat support** (adds only `biz` node)
 - ✅ **Backward compatibility** (regular messages pass through unchanged)
+- ✅ **Comprehensive Error Handling** with detailed validation
+- ✅ **17+ Button Types** including quick replies, CTAs, location, payments
+- ✅ **Dynamic Baileys Compatibility** (supports multiple Baileys versions)
 
-## Quick Start (Most Common Case)
+## Installation
 
-```javascript
-const { sendButtons } = require('baileys_helper');
+### For TypeScript Projects
 
-await sendButtons(sock, jid, {
-  title: 'Header Title',            // optional header
-  text: 'Pick one option below',    // body
-  footer: 'Footer text',            // optional footer
-  buttons: [
-    { id: 'quick_1', text: 'Quick Reply' },       // legacy simple shape auto‑converted
-    {
-      name: 'cta_url',
-      buttonParamsJson: JSON.stringify({
-        display_text: 'Open Site',
-        url: 'https://example.com'
-      })
-    }
-  ]
-});
+```bash
+npm install baileys-helper @types/node
+# or
+yarn add baileys-helper @types/node
 ```
 
-For full control (multiple advanced button kinds in one message) use `sendInteractiveMessage` with `interactiveButtons` directly.
+### For JavaScript Projects
 
-```javascript
-const { sendInteractiveMessage } = require('baileys_helper');
-
-await sendInteractiveMessage(sock, jid, {
-  text: 'Advanced native flow demo',
-  footer: 'All the things',
-  interactiveButtons: [
-    // Quick reply (explicit form)
-    {
-      name: 'quick_reply',
-      buttonParamsJson: JSON.stringify({ display_text: 'Reply A', id: 'reply_a' })
-    },
-    // Single select picker (list inside a button)
-    {
-      name: 'single_select',
-      buttonParamsJson: JSON.stringify({
-        title: 'Pick One',
-        sections: [{
-          title: 'Choices',
-          rows: [
-            { header: 'H', title: 'Hello', description: 'Says hi', id: 'opt_hello' },
-            { header: 'B', title: 'Bye', description: 'Says bye', id: 'opt_bye' }
-          ]
-        }]
-      })
-    }
-  ]
-});
+```bash
+npm install baileys-helper
+# or
+yarn add baileys-helper
 ```
 
----
-## Supported Button Types (Native Flow Names)
+## Quick Start
 
-Below are the most common & observed `name` values for `nativeFlowMessage.buttons[]` along with their required JSON keys. You can mix several in one `interactiveButtons` array (WhatsApp will decide layout).
+### TypeScript Usage
 
-| Name | Purpose | buttonParamsJson (required keys) |
-|------|---------|----------------------------------|
-| `quick_reply` | Simple reply that sends its `id` back | `{ display_text, id }` |
-| `single_select` | In‑button picker list | `{ title, sections:[{ title?, rows:[{ id, title, description?, header? }] }] }` |
-| `cta_url` | Open URL | `{ display_text, url, merchant_url? }` |
-| `cta_copy` | Copy text to clipboard | `{ display_text, copy_code }` |
-| `cta_call` | Tap to dial | `{ display_text, phone_number }` |
-| `cta_catalog` | Open business catalog | `{ display_text? }` (WA may ignore extra keys) |
-| `send_location` | Request user location (special flow) | `{ display_text? }` |
-| `review_and_pay` | Order / payment summary (special) | Payment structured payload (server‑validated) |
-| `payment_info` | Payment info flow | Payment structured payload |
-| `mpm` | Multi product message (catalog) | Vendor internal structure |
-| `wa_payment_transaction_details` | Show transaction | Transaction reference keys |
-| `automated_greeting_message_view_catalog` | Greeting -> catalog | (Minimal / internal) |
+```typescript
+import { sendButtons, Button } from 'baileys-helper';
 
-Not all special names are guaranteed to render outside official / business clients; unsupported ones are simply ignored by WhatsApp. Core stable ones for bots are: `quick_reply`, `single_select`, `cta_url`, `cta_copy`, `cta_call`.
-
-### Example: URL, Copy & Call Together
-```javascript
-await sendInteractiveMessage(sock, jid, {
-  text: 'Contact actions',
-  interactiveButtons: [
-    { name: 'cta_url', buttonParamsJson: JSON.stringify({ display_text: 'Docs', url: 'https://example.com' }) },
-    { name: 'cta_copy', buttonParamsJson: JSON.stringify({ display_text: 'Copy Code', copy_code: 'ABC-123' }) },
-    { name: 'cta_call', buttonParamsJson: JSON.stringify({ display_text: 'Call Support', phone_number: '+1234567890' }) }
-  ]
-});
-```
-
-### Example: Mixed Quick Replies + Catalog
-```javascript
-await sendInteractiveMessage(sock, jid, {
-  text: 'Explore products or reply',
-  interactiveButtons: [
-    { name: 'quick_reply', buttonParamsJson: JSON.stringify({ display_text: 'Hello', id: 'hi' }) },
-    { name: 'quick_reply', buttonParamsJson: JSON.stringify({ display_text: 'Pricing', id: 'pricing' }) },
-    { name: 'cta_catalog', buttonParamsJson: JSON.stringify({}) }
-  ]
-});
-```
-
-### Example: Location Request (Experimental)
-```javascript
-await sendInteractiveMessage(sock, jid, {
-  text: 'Please share your location',
-  interactiveButtons: [
-    { name: 'send_location', buttonParamsJson: JSON.stringify({ display_text: 'Share Location' }) }
-  ]
-});
-```
-
-### Example: Single Select Menu
-```javascript
-await sendInteractiveMessage(sock, jid, {
-  text: 'Choose one item',
-  interactiveButtons: [
-    { name: 'single_select', buttonParamsJson: JSON.stringify({
-        title: 'Menu',
-        sections: [{
-          title: 'Main',
-          rows: [
-            { id: 'it_1', title: 'First', description: 'First choice' },
-            { id: 'it_2', title: 'Second', description: 'Second choice' }
-          ]
-        }]
-    }) }
-  ]
-});
-```
-
-> Tip: Legacy simple objects like `{ id: 'x', text: 'Label' }` passed to `sendButtons` auto‑convert to `quick_reply`.
-
-<!-- Removed outdated Test Bot Commands section (referenced non-existent app-wks.js) -->
-
-## Technical Details
-
-### Binary Node Structure (What The Wrapper Injects)
-
-Private chat: adds `biz` + `interactive/native_flow` + `bot (biz_bot=1)`.
-
-Group chat: adds only `biz` + `interactive/native_flow`.
-
-When special first button names (`review_and_pay`, `payment_info`, `mpm`, etc.) are detected, version/name attributes change to match official client traffic so WhatsApp enables those flows.
-
-### Button Type Detection
-
-The wrapper detects button types using the same logic as itsukichan:
-
-- `listMessage` → 'list'
-- `buttonsMessage` → 'buttons'  
-- `interactiveMessage.nativeFlowMessage` → 'native_flow'
-
-### Content Conversion Flow
-
-Authoring (you write):
-```javascript
-{ text, footer, interactiveButtons: [{ name, buttonParamsJson }, ...] }
-```
-Wrapper builds (sent to WA):
-```javascript
-{ interactiveMessage: { nativeFlowMessage: { buttons: [...] }, body:{ text }, footer:{ text } } }
-```
-
-## Files Modified
-
-### Detailed API Reference: `sendInteractiveMessage`
-
-Low‑level power helper used by all higher level wrappers. Use this when you need to:
-- Mix several advanced button kinds in one message (e.g. `quick_reply` + `single_select` + `cta_url`).
-- Provide pre‑built `interactiveMessage` content (after internal transformation) while still benefiting from automatic binary node injection.
-- Attach custom relay options (`statusJidList`, `additionalAttributes`, experimental fields) or manually append extra `additionalNodes`.
-
-#### Signature
-```js
-async function sendInteractiveMessage(sock, jid, content, options = {})
-```
-
-#### Parameters
-- `sock`: Active WhiskeySockets/Baileys socket (must expose `relayMessage`, `logger`, `authState` or `user`).
-- `jid`: Destination WhatsApp JID (user or group). Auto‑detects group via `WABinary.isJidGroup`.
-- `content`: High‑level authoring object. Accepts either a regular Baileys message shape or the enhanced authoring shape:
-  - `text` (string) Body text (mapped to `interactiveMessage.body.text`).
-  - `footer` (string) Footer (mapped to `interactiveMessage.footer.text`).
-  - `title` / `subtitle` (string) Optional header title (mapped to `interactiveMessage.header.title`).
-  - `interactiveButtons` (Array) Array of button descriptors. Each item should be either:
-    - `{ name: '<native_flow_name>', buttonParamsJson: JSON.stringify({...}) }` (already normalized), or
-    - A legacy quick reply shape `{ id, text }` / `{ buttonId, buttonText: { displayText } }` which is auto‑normalized to a `quick_reply`.
-  - Any other Baileys message keys (e.g. `contextInfo`) pass through unchanged.
-- `options`: (Optional) Extra relay + generation options:
-  - All fields accepted by `generateWAMessageFromContent` (e.g. custom `timestamp`).
-  - `additionalNodes` (Array) Prepend your own binary nodes (the function appends required interactive nodes after detection).
-  - `additionalAttributes` (Object) Extra attributes for the root relay stanza.
-  - `statusJidList`, `useCachedGroupMetadata` (advanced Baileys relay options).
-
-#### What It Does Internally
-1. Calls `convertToInteractiveMessage(content)` if `interactiveButtons` exist, producing:
-   ```js
-   { interactiveMessage: { nativeFlowMessage: { buttons: [...] }, header?, body?, footer? } }
-   ```
-2. Imports WhiskeySockets internal helpers (`generateWAMessageFromContent`, `normalizeMessageContent`, `isJidGroup`, `generateMessageIDV2`). Throws if unavailable.
-3. Builds a raw `WAMessage` bypassing normal send validation (lets unsupported interactive types through).
-4. Normalizes and determines button type via `getButtonType` then derives binary node tree with `getButtonArgs`.
-5. Injects required binary nodes:
-   - Always a `biz` node (with nested `interactive/native_flow/...` for buttons and lists) when interactive.
-   - Adds `{ tag: 'bot', attrs: { biz_bot: '1' } }` automatically for private (1:1) chats enabling rendering of interactive flows.
-6. Relays the message using `relayMessage` with `additionalNodes`.
-7. Optionally emits the message locally (`sock.upsertMessage`) for private chats if `sock.config.emitOwnEvents` is set (groups are skipped to avoid duplicates).
-
-#### Return Value
-Resolves with the full constructed `WAMessage` object (`{ key, message, messageTimestamp, ... }`) so you can log/store/await acks exactly like a standard `sock.sendMessage` call.
-
-#### Error Handling
-- Throws `Socket is required` if `sock` is null/undefined.
-- Throws `WhiskeySockets functions not available` if internal modules cannot be loaded (e.g. path changes). In such a case you may fall back to plain `sock.sendMessage` for non‑interactive messages.
-
-#### Choosing Between Helpers
-- Use `sendButtons` / `sendInteractiveButtonsBasic` for simple quick replies + common CTA cases.
-- Use `sendInteractiveMessage` for any combination including `single_select`, special native flow names, or when you need to attach custom nodes.
-
-#### Advanced Example: Mixed Buttons + List + Custom Node
-```js
-const { sendInteractiveMessage } = require('baileys_helper');
-
-await sendInteractiveMessage(sock, jid, {
-  text: 'Pick or explore',
-  footer: 'Advanced demo',
-  interactiveButtons: [
-    { name: 'quick_reply', buttonParamsJson: JSON.stringify({ display_text: 'Hi', id: 'hi' }) },
-    { name: 'cta_url', buttonParamsJson: JSON.stringify({ display_text: 'Docs', url: 'https://example.com' }) },
-    { name: 'single_select', buttonParamsJson: JSON.stringify({
-        title: 'Menu',
-        sections: [{
-          title: 'Options',
-          rows: [
-            { id: 'a', title: 'Alpha', description: 'First item' },
-            { id: 'b', title: 'Beta', description: 'Second item' }
-          ]
-        }]
-    }) }
-  ]
-}, {
-  additionalNodes: [ { tag: 'biz', attrs: { experimental_flag: '1' } } ] // will be merged before auto interactive nodes
-});
-```
-
-#### Special Native Flow Names & Effects
-| First Button Name | Injected Node Variant | Notes |
-|-------------------|-----------------------|-------|
-| `review_and_pay`  | `biz` with `native_flow_name=order_details` | Payment/order style flow |
-| `payment_info`    | `biz` with `native_flow_name=payment_info`  | Payment info flow |
-| `mpm`, `cta_catalog`, `send_location`, `call_permission_request`, `wa_payment_transaction_details`, `automated_greeting_message_view_catalog` | `biz > interactive(native_flow v=1) > native_flow(v=2,name=<name>)` | Specialized (may require official client) |
-| Anything else / mixed | `biz > interactive(native_flow v=1) > native_flow(v=9,name=mixed)` | Generic path covering standard quick replies, lists, CTAs |
-
-#### Performance / Throughput
-Cost is roughly equivalent to a standard `sendMessage` call; extra overhead is a small synchronous transformation + node injection. Suitable for high‑volume bots. Consider standard Baileys concurrency limits for large broadcast scenarios.
-
-#### Debugging Tips
-- Temporary console log emitted: `Interactive send: { type, nodes, private }` – remove or redirect if noisy.
-- If buttons do not render: ensure first binary node injected is `biz` and private chats include the `bot` node.
-- Confirm each button's `buttonParamsJson` is valid JSON string (catch JSON.stringify mistakes early).
-
-#### Common Mistakes
-- Forgetting to JSON.stringify `buttonParamsJson` payloads.
-- Using `sendInteractiveMessage` without a socket that includes `relayMessage` (e.g., passing a partially constructed object).
-- Adding your own `bot` node for private chats (not needed; auto added).
-- Expecting unsupported special flows (payments/catalog) to render in a non‑business account—WhatsApp may silently ignore them.
-
-#### Minimal Raw Usage
-If you already built a correct `interactiveMessage` object you can call:
-```js
-await sendInteractiveMessage(sock, jid, {
-  interactiveMessage: {
-    nativeFlowMessage: {
-      buttons: [ { name: 'quick_reply', buttonParamsJson: JSON.stringify({ display_text: 'Hi', id: 'hi' }) } ]
-    },
-    body: { text: 'Direct native flow' }
+// Define your buttons with full type safety
+const buttons: Button[] = [
+  {
+    id: 'accept',
+    title: 'Accept',
+    type: 'quick_reply'
+  },
+  {
+    id: 'website',
+    title: 'Visit Website',
+    type: 'cta_url',
+    url: 'https://example.com'
   }
+];
+
+await sendButtons(
+  socket,
+  '1234567890@s.whatsapp.net',
+  buttons,
+  'Do you accept the terms and conditions?',
+  'Please choose an option below'
+);
+```
+
+### JavaScript Usage
+
+```javascript
+const { sendButtons } = require('baileys-helper');
+
+const buttons = [
+  { id: 'accept', title: 'Accept', type: 'quick_reply' },
+  { id: 'website', title: 'Visit Website', type: 'cta_url', url: 'https://example.com' }
+];
+
+await sendButtons(
+  socket,
+  '1234567890@s.whatsapp.net',
+  buttons,
+  'Do you accept the terms and conditions?',
+  'Please choose an option below'
+);
+```
+
+## Button Types
+
+This package supports 17+ different WhatsApp interactive button types:
+
+### Basic Buttons
+- **Quick Reply** - Simple response buttons
+- **CTA URL** - Buttons that open websites
+- **CTA Copy** - Buttons that copy text to clipboard
+- **CTA Call** - Buttons that initiate phone calls
+
+### Advanced Buttons
+- **Single Select** - In-button picker lists
+- **Send Location** - Location sharing buttons
+- **Open WebView** - Embedded web view buttons
+
+### Payment & Commerce
+- **Review & Pay** - Payment processing buttons
+- **Payment Info** - Payment status buttons
+- **CTA Catalog** - Product catalog buttons
+- **MPM** - Merchant payment buttons
+- **WA Payment Transaction** - Transaction details
+
+### Special Purpose
+- **Reminder** - Schedule reminder buttons
+- **Cancel Reminder** - Remove scheduled reminders
+- **Address Message** - Address selection buttons
+- **Galaxy Message** - Specialized message types
+- **Automated Greeting** - Auto-catalog greetings
+
+## Core Functions
+
+### `sendButtons(socket, jid, buttons, body, footer?)`
+
+High-level convenience function for quick-reply buttons.
+
+```typescript
+import { sendButtons, Button } from 'baileys-helper';
+
+const buttons: Button[] = [
+  { id: 'opt1', title: 'Option 1', type: 'quick_reply' },
+  { id: 'opt2', title: 'Option 2', type: 'quick_reply' }
+];
+
+await sendButtons(
+  socket,
+  '1234567890@s.whatsapp.net',
+  buttons,
+  'Choose an option:'
+);
+```
+
+### `sendInteractiveButtonsBasic(params)`
+
+Simplified wrapper for quick-reply buttons with full configuration control.
+
+```typescript
+import { 
+  sendInteractiveButtonsBasic, 
+  Button, 
+  InteractiveMessageConfig 
+} from 'baileys-helper';
+
+const params = {
+  socket,
+  jid: '1234567890@s.whatsapp.net',
+  config: {
+    body: 'Choose your preferred option',
+    footer: 'Select one below',
+    headerType: 1,
+    headerText: 'Menu Selection',
+    headerMedia: {
+      mediaType: 'image',
+      mediaUrl: 'https://example.com/menu.jpg',
+      mediaCaption: 'Choose wisely!'
+    }
+  },
+  buttons: [
+    {
+      id: 'menu1',
+      title: 'Option 1',
+      type: 'quick_reply'
+    },
+    {
+      id: 'menu2',
+      title: 'Option 2',
+      type: 'quick_reply'
+    }
+  ]
+};
+
+await sendInteractiveButtonsBasic(params);
+```
+
+### `sendInteractiveMessage(params)`
+
+Low-level power function for full control over button configuration.
+
+```typescript
+import { 
+  sendInteractiveMessage, 
+  Button, 
+  InteractiveMessageConfig 
+} from 'baileys-helper';
+
+const buttons: Button[] = [
+  {
+    id: 'visit',
+    title: 'Visit Website',
+    type: 'cta_url',
+    url: 'https://example.com'
+  },
+  {
+    id: 'call',
+    title: 'Call Support',
+    type: 'cta_call',
+    phoneNumber: '+1234567890'
+  },
+  {
+    id: 'copy_id',
+    title: 'Copy Order ID',
+    type: 'cta_copy',
+    copyText: 'ORDER-12345'
+  }
+];
+
+await sendInteractiveMessage({
+  socket,
+  jid: '1234567890@s.whatsapp.net',
+  config: {
+    body: 'Need help with your order?',
+    footer: 'Our support team is here to help',
+    headerText: 'Customer Support',
+    headerType: 1
+  },
+  buttons,
+  format: 'current' // 'legacy', 'current', or 'custom'
 });
 ```
-The helper will still inject binary nodes & bot node as required.
 
+## Validation & Error Handling
 
-- `helpers/buttons.js` - Enhanced with binary node support (template functionality removed)
-- `export.js` - Central export surface for the package and metadata helper
+### Interactive Validation
 
-## Compatibility
+All functions include comprehensive validation with detailed error reporting:
 
-- ✅ WhiskeySockets 7.0.0-rc.2+
-- ✅ Node.js 20+
-- ✅ All button types supported by itsukichan
-- ✅ Private and group chats
+```typescript
+import { validateInteractiveMessage, InteractiveValidationError } from 'baileys-helper';
 
-## Result
+try {
+  const validation = validateInteractiveMessage(config, buttons);
+  if (!validation.isValid) {
+    console.error('Validation errors:', validation.errors);
+    console.error('Warnings:', validation.warnings);
+  }
+} catch (error) {
+  if (error instanceof InteractiveValidationError) {
+    console.log('Detailed error format:');
+    console.log(error.formatDetailed());
+    
+    // Or get JSON format for API responses
+    console.log('JSON format:', error.toJSON());
+  }
+}
+```
 
-You can now send all mainstream interactive button variants (quick replies, URL / copy / call CTAs, single select lists) plus experimental special flows from WhiskeySockets exactly like the official client, with automatic handling for groups vs private chats and without editing fork source.
+### Common Validation Errors
+
+The validation system catches:
+- Missing or invalid button IDs
+- Empty or invalid body text
+- Type-specific button validation (URLs, phone numbers, etc.)
+- Button count limits
+- Missing required fields for specific button types
+
+## Type Definitions
+
+### Core Types
+
+```typescript
+import { 
+  Button,           // Union type for all button types
+  WASocket,         // Baileys socket interface
+  InteractiveMessageConfig, // Message configuration
+  ValidationResult  // Validation result interface
+} from 'baileys-helper';
+```
+
+### Button Type Interfaces
+
+```typescript
+// Individual button interfaces are available
+import { 
+  QuickReplyButton,
+  CTAUrlButton,
+  CTACopyButton,
+  CTACallButton,
+  SendLocationButton,
+  SingleSelectButton
+  // ... and more
+} from 'baileys-helper';
+```
+
+## Utility Functions
+
+### `buildInteractiveButtons(buttons)`
+
+Normalize buttons from multiple legacy formats into the current native_flow format.
+
+```typescript
+import { buildInteractiveButtons } from 'baileys-helper';
+
+const rawButtons = [
+  { id: '1', title: 'Button 1' },           // Legacy format
+  { id: '2', title: 'Button 2', url: 'https://example.com' },
+  { 
+    buttonId: '3', 
+    buttonText: { displayText: 'Button 3' }  // Old Baileys format
+  }
+];
+
+const normalizedButtons = buildInteractiveButtons(rawButtons);
+```
+
+### `getButtonType(button)`
+
+Detect the button type based on button properties.
+
+```typescript
+import { getButtonType } from 'baileys-helper';
+
+const button = { id: '1', title: 'Test', url: 'https://example.com' };
+const type = getButtonType(button); // Returns: 'cta_url'
+```
+
+### `isValidButtonId(id)`
+
+Validate button ID format.
+
+```typescript
+import { isValidButtonId } from 'baileys-helper';
+
+console.log(isValidButtonId('valid_id')); // true
+console.log(isValidButtonId(''));         // false
+console.log(isValidButtonId(null));       // false
+```
+
+## Migration from JavaScript to TypeScript
+
+### Automatic Type Inference
+
+If you're already using `baileys-helper` in JavaScript, TypeScript will automatically infer types:
+
+```javascript
+// JavaScript
+const { sendButtons } = require('baileys-helper');
+// TypeScript will infer: sendButtons(socket: WASocket, jid: string, buttons: Button[], body: string, footer?: string) => Promise<any>
+```
+
+### Gradual Type Adoption
+
+1. **Install TypeScript dependencies:**
+   ```bash
+   npm install --save-dev typescript @types/node
+   ```
+
+2. **Rename files to `.ts`:** Your existing JavaScript code will work immediately with type inference.
+
+3. **Add explicit types gradually:**
+   ```typescript
+   import { sendButtons, Button } from 'baileys-helper';
+   
+   const buttons: Button[] = [
+     { id: '1', title: 'Button 1', type: 'quick_reply' }
+   ];
+   ```
+
+## API Reference
+
+For complete API documentation, see [`docs/typescript-api-documentation.md`](docs/typescript-api-documentation.md).
+
+## Examples
+
+For comprehensive examples, see:
+- [`examples/typescript-examples.ts`](examples/typescript-examples.ts) - TypeScript examples
+- [`examples/test-all-types.ts`](examples/test-all-types.ts) - Type system validation tests
+
+## Building from Source
+
+```bash
+git clone https://github.com/your-org/baileys-helper-typescript.git
+cd baileys-helper-typescript
+npm install
+npm run build
+```
+
+### Build Scripts
+
+- `npm run build` - Build JavaScript and TypeScript declarations
+- `npm run build:js` - Build JavaScript files only
+- `npm run build:types` - Build TypeScript declarations only
+- `npm run build:watch` - Watch mode for development
+- `npm run type-check` - Check TypeScript types without building
+- `npm run clean` - Clean build artifacts
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the ISC License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Original BaileysHelper by [mehebub648](https://github.com/mehebub648/Scratchive-Module-BaileysHelper)
+- WhiskeySockets/Baileys community for the foundation
+- TypeScript community for excellent type system patterns

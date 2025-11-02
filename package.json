@@ -10,12 +10,28 @@
   "license": "ISC",
   "author": "mehebub648",
   "type": "commonjs",
-  "main": "export.js",
+  "main": "dist/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mehebub648/Scratchive-Module-BaileysHelper.git"
+    "url": "git+https://github.com/mehebub648/Scratchive-Module-BaileysHelper.git"
   },
+  "types": "dist/index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npm run build:js && npm run build:types",
+    "build:js": "tsc",
+    "build:types": "tsc --project tsconfig.declarations.json",
+    "build:watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "type-check": "tsc --noEmit",
+    "dev": "npm run build:watch"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "bugs": {
+    "url": "https://github.com/mehebub648/Scratchive-Module-BaileysHelper/issues"
   }
 }
