@@ -1,19 +1,19 @@
 {
-  "name": "baileys_helper",
+  "name": "BaileysHelper",
   "version": "1.0.6",
   "description": "This is a plugin to make baileys more interactive",
-  "homepage": "https://scratchive.com",
+  "homepage": "https://github.com/terastudio-org/BaileysHelper",
   "keywords": [
     "Baileys",
     "WhatsApp"
   ],
   "license": "ISC",
-  "author": "mehebub648",
+  "author": "terastudio-org",
   "type": "commonjs",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mehebub648/Scratchive-Module-BaileysHelper.git"
+    "url": "git+https://github.com/terastudio-org/BaileysHelper.git"
   },
   "types": "dist/index.d.ts",
   "scripts": {
@@ -32,6 +32,6 @@
     "typescript": "^5.0.0"
   },
   "bugs": {
-    "url": "https://github.com/mehebub648/Scratchive-Module-BaileysHelper/issues"
+    "url": "https://github.com/terastudio-org/BaileysHelper/issues"
   }
 }
