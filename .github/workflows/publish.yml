@@ -1,0 +1,41 @@
+# .github/workflows/publish.yml
+name: Publish to NPM
+
+on:
+  # This workflow is triggered when a 'release' event occurs with the 'published' type.
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    # Run on the latest Ubuntu runner
+    runs-on: ubuntu-latest
+    
+    # Only run if the release is not a prerelease (optional, adjust as needed)
+    if: github.event.release.prerelease == false
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Specify your required Node.js version
+          # Configures npm to use the token for publishing
+          registry-url: 'https://registry.npmjs.org'
+          
+      - name: 📥 Install dependencies
+        # Use 'npm ci' for clean installs in CI environments
+        run: npm ci 
+        
+      - name: 🧪 Build/Test (if needed)
+        # Uncomment and adjust if your package requires a build step or tests before publishing
+        # run: npm run build
+        # run: npm test
+
+      - name: 🚀 Publish package to NPM
+        run: npm publish
+        env:
+          # Use a secret containing your npm token for authentication
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
